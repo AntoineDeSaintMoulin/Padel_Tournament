@@ -25,6 +25,12 @@ import {
 
 export default function App() {
   const [state, setState] = useState<TournamentState>(() => {
+    // Essaie de charger depuis localStorage
+    const saved = localStorage.getItem('padel_tournament');
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    // Sinon, initialisation normale
     const initialRotation = generateInitialRotation(INITIAL_PLAYERS, "09:00");
     return {
       players: INITIAL_PLAYERS,
@@ -33,6 +39,11 @@ export default function App() {
       startTime: "09:00"
     };
   });
+
+  // Sauvegarde automatique à chaque changement de state
+  useEffect(() => {
+    localStorage.setItem('padel_tournament', JSON.stringify(state));
+  }, [state]);
 
   const [activeTab, setActiveTab] = useState<'matches' | 'leaderboard' | 'history' | 'players'>('players');
 
@@ -115,12 +126,15 @@ export default function App() {
   const resetTournament = () => {
     if (window.confirm("Êtes-vous sûr de vouloir tout réinitialiser ? Cela effacera tous les scores et les noms des joueurs.")) {
       const initialRotation = generateInitialRotation(INITIAL_PLAYERS, "09:00");
-      setState({
+      const initialState = {
         players: INITIAL_PLAYERS,
         rotations: [initialRotation],
         currentRotationIndex: 0,
         startTime: "09:00"
-      });
+      };
+      // Efface aussi le localStorage
+      localStorage.removeItem('padel_tournament');
+      setState(initialState);
       setActiveTab('players');
     }
   };
