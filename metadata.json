@@ -1,0 +1,5 @@
+{
+  "name": "Padel Master: Montante-Descendante",
+  "description": "Application de gestion de tournoi de Padel avec système de montée/descente, séparation des partenaires et classement en temps réel.",
+  "requestFramePermissions": []
+}
