@@ -15,7 +15,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { Player, TournamentState, Rotation, Match } from './types';
-import { INITIAL_PLAYERS, TOURNAMENT_CONFIG } from './constants';
+import { INITIAL_PLAYERS, TOURNAMENT_CONFIG, TOURNAMENT_CONFIG_BY_PLAYER_COUNT } from './constants';
 import { 
   generateInitialRotation, 
   generateNextRotation, 
@@ -24,13 +24,19 @@ import {
 } from './logic/tournament';
 
 export default function App() {
+  const [playerCount, setPlayerCount] = useState<number>(() => {
+    const saved = localStorage.getItem('padel_tournament');
+    if (saved) return JSON.parse(saved).players.length;
+    return 14;
+  });
+
+  const config = TOURNAMENT_CONFIG_BY_PLAYER_COUNT[playerCount] ?? TOURNAMENT_CONFIG;
+
   const [state, setState] = useState<TournamentState>(() => {
-    // Essaie de charger depuis localStorage
     const saved = localStorage.getItem('padel_tournament');
     if (saved) {
       return JSON.parse(saved);
     }
-    // Sinon, initialisation normale
     const initialRotation = generateInitialRotation(INITIAL_PLAYERS, "09:00");
     return {
       players: INITIAL_PLAYERS,
@@ -75,7 +81,7 @@ export default function App() {
   };
 
   const completeRotation = () => {
-    if (state.currentRotationIndex === TOURNAMENT_CONFIG.numRotations - 1) {
+if (state.currentRotationIndex === config.numRotations - 1)
       setState(prev => {
         const newRotations = [...prev.rotations];
         newRotations[prev.currentRotationIndex].isCompleted = true;
@@ -112,7 +118,8 @@ export default function App() {
         const endTime = formatTime(endTimeDate);
         
         // Prepare for next rotation start time
-        currentTime = new Date(endTimeDate.getTime() + TOURNAMENT_CONFIG.breakDurationMinutes * 60000);
+        const endTimeDate = new Date(currentTime.getTime() + config.matchDurationMinutes * 60000);
+currentTime = new Date(endTimeDate.getTime() + config.breakDurationMinutes * 60000);
         
         return { ...r, startTime, endTime };
       });
@@ -197,20 +204,39 @@ export default function App() {
                   <span className="text-sm font-bold uppercase tracking-wider">Configuration</span>
                 </div>
                 <h2 className="text-4xl font-black tracking-tighter italic serif">LES JOUEURS</h2>
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <p className="text-black/40 text-sm font-medium">Personnalisez les noms des 14 participants avant ou pendant le tournoi.</p>
-                  <button 
-                    onClick={resetTournament}
-                    className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-600 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-rose-100 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Tout réinitialiser
-                  </button>
-                </div>
+<div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+  <div className="flex items-center gap-3">
+    <p className="text-black/40 text-sm font-medium">Nombre de joueurs :</p>
+    <div className="flex bg-black/5 p-1 rounded-xl">
+      {[8, 9, 10, 11, 12, 13, 14].map(n => (
+        <button
+          key={n}
+          onClick={() => {
+            setPlayerCount(n);
+            const newPlayers = INITIAL_PLAYERS.slice(0, n);
+            const initialRotation = generateInitialRotation(newPlayers, "09:00");
+            localStorage.removeItem('padel_tournament');
+            setState({ players: newPlayers, rotations: [initialRotation], currentRotationIndex: 0, startTime: "09:00" });
+          }}
+          className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${playerCount === n ? 'bg-white shadow-sm text-emerald-700' : 'text-black/60 hover:text-black'}`}
+        >
+          {n}
+        </button>
+      ))}
+    </div>
+  </div>
+  <button 
+    onClick={resetTournament}
+    className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-600 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-rose-100 transition-colors"
+  >
+    <Trash2 className="w-4 h-4" />
+    Tout réinitialiser
+  </button>
+</div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {state.players.map((player, idx) => (
+                {state.players.slice(0, playerCount).map((player, idx) => (
                   <div key={player.id} className="bg-white p-4 rounded-2xl shadow-sm border border-black/5 flex items-center gap-4 group focus-within:ring-2 focus-within:ring-emerald-500 transition-all">
                     <div className="w-10 h-10 bg-black/5 rounded-xl flex items-center justify-center font-mono font-black text-black/20 group-hover:text-emerald-600 transition-colors">
                       {idx + 1}
@@ -254,7 +280,7 @@ export default function App() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-emerald-600">
                     <RefreshCw className="w-5 h-5" />
-                    <span className="text-sm font-bold uppercase tracking-wider">Rotation {state.currentRotationIndex + 1} / {TOURNAMENT_CONFIG.numRotations}</span>
+                    <span>Rotation {state.currentRotationIndex + 1} / {config.numRotations}</span>
                   </div>
                   <h2 className="text-4xl font-black tracking-tighter italic serif">EN COURS</h2>
                 </div>
